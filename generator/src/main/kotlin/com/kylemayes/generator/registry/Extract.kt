@@ -390,7 +390,7 @@ data class Version(
     override val name: Identifier,
     override val api: String? = null,
     val number: Float,
-    val require: Require,
+    val requireList: List<Require>,
 ) : Entity
 
 private fun extractVersion(e: Element) =
@@ -398,7 +398,7 @@ private fun extractVersion(e: Element) =
         name = e.getAttribute("name").intern(),
         api = e.getAttributeText("api"),
         number = e.getAttribute("number").toFloat(),
-        require = extractRequire(e.getElements("require")),
+        requireList = extractRequire(e.getElements("require")),
     )
 
 /** A Vulkan extension. */
@@ -417,7 +417,7 @@ data class Extension(
     val promotedto: String?,
     val supported: String,
     val provisional: Boolean,
-    val require: Require,
+    val requireList: List<Require>,
 ) : Entity
 
 private fun extractExtension(e: Element) =
@@ -436,7 +436,7 @@ private fun extractExtension(e: Element) =
         promotedto = e.getAttributeText("promotedto"),
         supported = e.getAttribute("supported"),
         provisional = e.getAttributeText("provisional") == "true",
-        require = extractRequire(e.getElements("require")),
+        requireList = extractRequire(e.getElements("require")),
     )
 
 /** The commands, types, and enum extensions provided by a version or extension. */
@@ -444,21 +444,21 @@ data class Require(
     val commands: Set<Identifier>,
     val types: Set<String>,
     val values: List<RequireValue>,
+    val depends: String,
 )
 
-private fun extractRequire(es: List<Element>): Require {
-    val commands = HashSet<Identifier>()
-    val types = HashSet<String>()
-    val values = ArrayList<RequireValue>()
-
-    for (e in es) {
+private fun extractRequire(es: List<Element>): List<Require> =
+    es.map { e ->
+        val commands = HashSet<Identifier>()
+        val types = HashSet<String>()
+        val values = ArrayList<RequireValue>()
+        var depends = ""
         commands.addAll(e.getElements("command") { it.getAttribute("name").intern() })
         types.addAll(e.getElements("type") { it.getAttribute("name") })
         values.addAll(e.getElements("enum", ::extractRequireValue))
+        depends = e.getAttribute("depends")
+        Require(commands, types, values, depends)
     }
-
-    return Require(commands, types, values)
-}
 
 /** An additional bitmask bitflag or enum variant defined by a version or extension. */
 data class RequireValue(
@@ -619,8 +619,8 @@ fun Type.getBaseIdentifier(): Identifier? =
 data class ArrayType(val element: Type, val length: Identifier) : Type {
     override fun generate() =
         when (element.getIdentifier()?.original) {
-            "char" -> "StringArray<$length>"
-            "uint8_t" -> "ByteArray<$length>"
+            //"char" -> "StringArray<$length>"
+            //"uint8_t" -> "ByteArray<$length>"
             else -> {
                 val constant = length.original.all { it.isDigit() }
                 val cast = if (constant) "" else " as usize"
@@ -632,9 +632,13 @@ data class ArrayType(val element: Type, val length: Identifier) : Type {
 
     override fun generateDefault() =
         when (element.getIdentifier()?.original) {
-            "char" -> "StringArray::default()"
-            "uint8_t" -> "ByteArray::default()"
-            else -> "[${element.generateDefault()}; $length]"
+            //"char" -> "StringArray::default()"
+            //"uint8_t" -> "ByteArray::default()"
+            else -> {
+                val constant = length.original.all { it.isDigit() }
+                val cast = if (constant) "" else " as usize"
+                "[${element.generateDefault()}; $length$cast]"
+            }
         }
 }
 
@@ -655,11 +659,13 @@ data class IdentifierType(val identifier: Identifier) : Type {
             // Types from the Vulkan video headers are prefixed with `StdVideo`
             // and are in a separate `video` module from the registry types.
             "video::${identifier.value}"
+        } else if (identifier.value.startsWith("PFN")) {
+            "Option<${identifier.value}>"
         } else {
             primitives.getOrDefault(identifier.value, identifier.value)
         }
 
-    override fun generateDefault() = "${generate()}::default()"
+    override fun generateDefault() = "Default::default()"
 }
 
 fun Type.getIdentifier() = if (this is IdentifierType) identifier else null

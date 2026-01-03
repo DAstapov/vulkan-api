@@ -11,7 +11,7 @@ fun Registry.generateFunctions() =
     """
 use core::ffi::{c_char, c_void};
 
-use crate::*;
+use crate::vk::*;
 
 ${functions.values
         .sortedBy { it.name }
@@ -24,6 +24,6 @@ private fun Registry.generateFunction(function: Function): String {
     val result = function.result?.let { "-> ${it.generateForCommand()}" } ?: ""
     return """
 /// <${generateManualUrl(function)}>
-pub type ${function.name} = Option<unsafe extern "system" fn ($params)$result>;
+pub type ${function.name} = extern "system" fn ($params)$result;
     """
 }

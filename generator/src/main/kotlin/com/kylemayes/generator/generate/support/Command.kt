@@ -56,7 +56,7 @@ private val getExtensionCommandTypes =
     thunk { ->
         extensions.values
             .filter { e -> e.type != null }
-            .flatMap { e -> e.require.commands.map { c -> Pair(e, c) } }
+            .flatMap { e -> e.requireList.flatMap { it.commands }.map { c -> Pair(e, c) } }
             .associate { (e, c) -> c to CommandType.valueOf(e.type!!.uppercase()) }
     }
 

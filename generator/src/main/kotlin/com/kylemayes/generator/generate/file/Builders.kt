@@ -32,7 +32,7 @@ use core::marker::PhantomData;
 use core::ops;
 use core::ptr::NonNull;
 
-use super::*;
+use crate::vk::*;
 
 /// A type that can be used interchangeably with another in FFI.
 pub unsafe trait Cast {

@@ -12,19 +12,18 @@ import com.kylemayes.generator.registry.Registry
 fun Registry.generateVersionTraits(): String {
     var versions =
         """
-use alloc::vec::Vec;
 use core::borrow::Borrow;
 use core::ffi::{c_void, CStr};
-use core::mem::MaybeUninit;
 use core::ptr;
 
-use super::*;
+use crate::vk::*;
+use crate::wrapper::*;
         """
 
     var previousSuffix: String? = null
     for (group in this.versions.values.groupBy { it.number }) {
         val groupNumber = group.value.first().number
-        val groupCommands = group.value.flatMap { it.require.commands }.toSet()
+        val groupCommands = group.value.flatMap { it.requireList }.flatMap {  it.commands }.toSet()
 
         val suffix = groupNumber.toString().replace('.', '_')
         val commands =
@@ -111,12 +110,6 @@ pub trait $name {
     ${if (handle) "fn handle(&self) -> ${type.display};" else ""}
 
     $commandWrappers
-}
-
-impl $name for crate::${type.display} {
-    #[inline] fn commands(&self) -> &$commandType { &self.commands }
-
-    ${if (handle) "#[inline] fn handle(&self) -> ${type.display} { self.handle }" else ""}
 }
 
 $simpleImpl

@@ -25,7 +25,7 @@ val getExtensionTraits =
             .sortedBy { it.name }
             .flatMap { ext ->
                 val type = CommandType.valueOf(ext.type!!.uppercase())
-                val commands = ext.require.commands.mapNotNull { commands[it] }.sortedBy { it.name }
+                val commands = ext.requireList.flatMap { it.commands }.mapNotNull { commands[it] }.sortedBy { it.name }
 
                 // Create separate traits for instance-level and device-level
                 // device extension commands if necessary.

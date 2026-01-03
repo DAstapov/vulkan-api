@@ -19,7 +19,7 @@ fun parseRegistry(xml: String): Registry {
         }
 
     var registry = log.time("Extract Entities") { extractEntities(document) }
-    registry = log.time("Filter Entities") { registry.filterEntities() }
+    registry = log.time("Filter Entities") { registry.filterRegistry() }
     log.time("Extend Entities") { registry.extendEntities() }
     log.time("Rename Entities") { registry.renameEntities() }
     return registry

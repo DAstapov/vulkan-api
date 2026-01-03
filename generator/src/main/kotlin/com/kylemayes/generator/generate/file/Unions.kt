@@ -12,9 +12,8 @@ fun Registry.generateUnions() =
     """
 use core::ffi::{c_char, c_void};
 use core::fmt;
-use core::mem::MaybeUninit;
 
-use crate::*;
+use crate::vk::*;
 
 ${unions.values
         .sortedBy { it.name }
@@ -36,7 +35,7 @@ pub union ${union.name} {
 impl Default for ${union.name} {
     #[inline]
     fn default() -> Self {
-        unsafe { MaybeUninit::zeroed().assume_init() }
+        unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
     }
 }
 

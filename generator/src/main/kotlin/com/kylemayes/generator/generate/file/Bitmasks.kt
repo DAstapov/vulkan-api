@@ -14,7 +14,7 @@ fun Registry.generateBitmasks() =
     """
 use bitflags::bitflags;
 
-use crate::{Flags, Flags64};
+use crate::vk::*;
 
 ${bitmasks.values
         .sortedBy { it.name }

@@ -9,16 +9,20 @@ fun Registry.extendEntities() {
     val added = HashSet<Entity>()
 
     for (version in versions.values) {
-        for (ext in version.require.values) {
-            extendBitmask(ext, bitmasks, added)
-            extendEnum(ext, enums, added)
+        for (require in version.requireList) {
+            for (ext in require.values) {
+                extendBitmask(ext, bitmasks, added)
+                extendEnum(ext, enums, added)
+            }
         }
     }
 
     for (extension in extensions.values) {
-        for (ext in extension.require.values) {
-            extendBitmask(ext, bitmasks, added)
-            extendEnum(ext, enums, added, extension.number)
+        for (require in extension.requireList) {
+            for (ext in require.values) {
+                extendBitmask(ext, bitmasks, added)
+                extendEnum(ext, enums, added, extension.number)
+            }
         }
     }
 }

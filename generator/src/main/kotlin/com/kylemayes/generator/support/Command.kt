@@ -15,18 +15,6 @@ private val log = KotlinLogging.logger { /* */ }
 private val waitTimeout = 30.seconds
 private val killTimeout = 5.seconds
 
-/** Executes the `bindgen` command and returns the output. */
-fun bindgen(vararg args: String): String = execute("bindgen", arrayOf(*args))
-
-/** Executes the `git` command and prints the output. */
-fun git(
-    vararg args: String,
-    directory: Path? = null,
-) {
-    println("> git ${args.joinToString(" ")}")
-    println(execute("git", arrayOf(*args), directory = directory))
-}
-
 /** Executes the `rustfmt` command and returns the output. */
 fun rustfmt(rust: String): String = execute("rustfmt", arrayOf("--edition", "2021"), input = rust)
 

@@ -12,32 +12,14 @@ import com.kylemayes.generator.registry.Registry
 import com.kylemayes.generator.registry.intern
 import com.kylemayes.generator.support.toPascalCase
 
-/** The warning and `cfg` applied to the documentation for provisional extensions. */
-private val PROVISIONAL: String =
-    """
-///
-/// ## WARNING
-///
-/// This is a
-/// [provisional extension](https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/provisional-headers.html).
-/// Provisional extensions are not guaranteed to be backwards compatible and are
-/// not intended to be used in production applications.
-#[cfg(feature = "provisional")]
-   """.trimEnd()
-
 /** Generates Rust modules and constants for Vulkan extensions. */
 fun Registry.generateExtensions() =
     """
-use crate::{StringArray, MAX_EXTENSION_NAME_SIZE};
-
-/// A Vulkan extension name.
-pub type ExtensionName = StringArray<MAX_EXTENSION_NAME_SIZE>;
-
 /// A collection of metadata for a Vulkan extension.
 #[derive(Copy, Clone, Debug)]
 pub struct Extension {
     /// The name of the extension.
-    pub name: ExtensionName,
+    pub name: &'static core::ffi::CStr,
     /// The unique number assigned to the extension.
     pub number: i32,
 
@@ -53,7 +35,7 @@ pub struct Extension {
     pub platform: Option<&'static str>,
 
     /// The other extensions required by the extension.
-    pub required_extensions: Option<&'static [ExtensionName]>,
+    pub required_extensions: Option<&'static [&'static core::ffi::CStr]>,
     /// The Vulkan version required by the extension (e.g., `1.1`).
     pub required_version: Option<&'static str>,
 
@@ -73,7 +55,7 @@ ${getExtensionGroups().values
 
 /** Generates a Rust constant for a Vulkan extension. */
 private fun Registry.generateExtension(extension: Extension): String {
-    val provisional = if (extension.provisional) PROVISIONAL else ""
+    val provisional = ""
     val deprecation = generateDeprecation(extension)?.let { "\n$it" } ?: ""
 
     val extensions =
@@ -91,7 +73,7 @@ private fun Registry.generateExtension(extension: Extension): String {
 /// <${generateManualUrl(extension)}>$provisional$deprecation
 #[allow(deprecated)]
 pub const ${extension.name}_EXTENSION: Extension = Extension {
-    name: ExtensionName::from_bytes(b"${extension.name.original}"),
+    name: c"${extension.name.original}",
     number: ${extension.number},
     type_: "${extension.type}",
     author: "${extension.author}",
@@ -109,12 +91,11 @@ pub const ${extension.name}_EXTENSION: Extension = Extension {
 /** Generates Rust modules and traits for Vulkan extensions. */
 fun Registry.generateExtensionTraits() =
     """
-use alloc::vec::Vec;
 use core::ffi::{c_int, c_void, CStr};
-use core::mem::MaybeUninit;
 use core::ptr;
 
-use super::*;
+use crate::vk::*;
+use crate::wrapper::*;
 
 ${getExtensionTraits().joinToString("") { generateExtensionTrait(it) }}
     """
@@ -129,7 +110,7 @@ private fun Registry.generateExtensionTrait(trait: ExtensionTrait): String {
 
     val implAttributes =
         listOf(
-            if (extension.provisional) "#[cfg(feature = \"provisional\")]" else "",
+            "",
             if (deprecation.isNotEmpty()) "#[allow(deprecated)]" else "",
         ).filter { it.isNotBlank() }.joinToString("\n")
 

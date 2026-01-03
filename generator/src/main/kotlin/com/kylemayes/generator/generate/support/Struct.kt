@@ -12,7 +12,6 @@ import com.kylemayes.generator.registry.getBaseIdentifier
 import com.kylemayes.generator.registry.getElement
 import com.kylemayes.generator.registry.getIdentifier
 import com.kylemayes.generator.registry.isPointer
-import java.lang.IllegalArgumentException
 import kotlin.math.max
 
 data class StructBitfields(
@@ -95,7 +94,7 @@ fun Registry.getStructDerives(struct: Structure): Set<String> {
 
     val required = HashSet<String>()
     if (!functions) required.add("Debug")
-    if (!pointers) required.add("Default")
+    //if (!pointers) required.add("Default")
 
     // These traits will not be "manually" implemented so they can only be
     // applied to structs that meet the requirements and don't (transitively)

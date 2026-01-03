@@ -20,7 +20,7 @@ use core::ffi::{c_char, c_int, c_void};
 use core::fmt;
 use core::ptr;
 
-use crate::*;
+use crate::vk::*;
 
 ${structs.values
         .sortedBy { it.name }

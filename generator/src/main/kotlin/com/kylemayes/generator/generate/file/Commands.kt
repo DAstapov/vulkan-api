@@ -13,7 +13,7 @@ fun Registry.generateCommands() =
     """
 use core::ffi::{c_char, c_int, c_void};
 
-use crate::*;
+use crate::vk::*;
 
 ${commands.values
         .sortedBy { it.name }
@@ -42,10 +42,9 @@ fun Registry.generateCommandStructs(): String {
                 generateCommandStruct(it.key, supported)
             }
     return """
-use core::mem;
 use core::ffi::{c_char, c_int, c_void};
 
-use super::*;
+use crate::vk::*;
 
 $structs
     """
@@ -64,7 +63,7 @@ pub struct ${type.display}Commands {
 
 impl ${type.display}Commands {
     #[inline]
-    pub unsafe fn load(mut loader: impl FnMut(*const c_char) -> Option<unsafe extern "system" fn()>) -> Self {
+    pub unsafe fn load(mut loader: impl FnMut(*const c_char) -> Option<extern "system" fn()>) -> Self {
         Self { ${commands.joinToString { generateLoad(it) }} }
     }
 }
@@ -76,7 +75,7 @@ private fun Registry.generateLoad(command: Command) =
 ${command.name}: {
     let value = loader(c"${command.name.original}".as_ptr());
     if let Some(value) = value {
-        mem::transmute(value)
+        unsafe { core::mem::transmute(value) }
     } else {
         ${generateSignature(command, "fallback")} {
             panic!("could not load ${command.name.original}")
@@ -94,5 +93,5 @@ private fun generateSignature(
     val params = command.params.joinToString { "_${it.name.value.removePrefix("_")}: ${it.type.generateForCommand()}" }
     val actual = command.result.generateForCommand()
     val result = if (actual != "c_void") " -> $actual" else ""
-    return "unsafe extern \"system\" fn $name($params)$result"
+    return "extern \"system\" fn $name($params)$result"
 }

@@ -13,11 +13,7 @@ import com.kylemayes.generator.registry.intern
 fun Registry.generateEnums() =
     """
 use core::fmt;
-
-#[cfg(feature = "std")]
 use std::error;
-#[cfg(all(feature = "no_std_error", not(feature="std")))]
-use core::error;
 
 ${enums.values.sortedBy { it.name }.joinToString("\n") { generateEnum(it) }}
 ${generateAliases(enums.keys)}
@@ -27,13 +23,9 @@ ${generateAliases(enums.keys)}
 fun Registry.generateResultEnums() =
     """
 use core::fmt;
-
-#[cfg(feature = "std")]
 use std::error;
-#[cfg(all(feature = "no_std_error", not(feature="std")))]
-use core::error;
 
-use super::Result;
+use crate::vk::*;
 
 ${generateResultEnum("SuccessCode", "Result codes that indicate successes.") { it.value >= 0 }}
 ${generateResultEnum("ErrorCode", "Result codes that indicate errors.") { it.value < 0 }}
@@ -88,7 +80,7 @@ private fun Registry.generateEnum(
 
     val error =
         if (enum.name.value == "Result" || enum.name.value == "ErrorCode") {
-            "#[cfg(any(feature=\"std\", feature=\"no_std_error\"))] impl error::Error for ${enum.name} { }"
+            "impl error::Error for ${enum.name} { }"
         } else {
             ""
         }

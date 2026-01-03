@@ -2,9 +2,9 @@
 
 package com.kylemayes.generator.generate
 
+import com.kylemayes.generator.generate.file.generateBitfields
 import com.kylemayes.generator.generate.file.generateBitmasks
 import com.kylemayes.generator.generate.file.generateBuilders
-import com.kylemayes.generator.generate.file.generateChains
 import com.kylemayes.generator.generate.file.generateCommandStructs
 import com.kylemayes.generator.generate.file.generateCommands
 import com.kylemayes.generator.generate.file.generateConstants
@@ -13,13 +13,15 @@ import com.kylemayes.generator.generate.file.generateExtensionTraits
 import com.kylemayes.generator.generate.file.generateExtensions
 import com.kylemayes.generator.generate.file.generateFunctions
 import com.kylemayes.generator.generate.file.generateHandles
-import com.kylemayes.generator.generate.file.generateHeaders
+import com.kylemayes.generator.generate.file.generateLib
 import com.kylemayes.generator.generate.file.generateMacros
 import com.kylemayes.generator.generate.file.generateResultEnums
 import com.kylemayes.generator.generate.file.generateStructs
 import com.kylemayes.generator.generate.file.generateTypedefs
 import com.kylemayes.generator.generate.file.generateUnions
 import com.kylemayes.generator.generate.file.generateVersionTraits
+import com.kylemayes.generator.generate.file.generateVkModule
+import com.kylemayes.generator.generate.file.generateWrapperModule
 import com.kylemayes.generator.registry.Registry
 import com.kylemayes.generator.support.rustfmt
 import mu.KotlinLogging
@@ -28,39 +30,30 @@ import java.nio.file.Path
 
 private val log = KotlinLogging.logger { /* */ }
 
-/** The additional `bindgen` options for the Vulkan video headers. */
-private val videoOptions =
-    listOf(
-        "--allowlist-item", "StdVideo.*",
-        "--allowlist-item", "STD_VIDEO_.*",
-        "--no-prepend-enum-name",
-        "--default-enum-style", "newtype_global",
-        "--with-derive-custom-enum", ".*=Default",
-    )
-
-/** Generates Rust files for a Vulkan API registry and Vulkan video headers. */
+/** Generates Rust files for a Vulkan API registry. */
 fun generateRustFiles(
     registry: Registry,
-    video: Map<String, String>,
 ) = listOf(
-    generateRustFile("vulkanalia-sys", "bitmasks.rs", registry.generateBitmasks()),
-    generateRustFile("vulkanalia-sys", "commands.rs", registry.generateCommands()),
-    generateRustFile("vulkanalia-sys", "constants.rs", registry.generateConstants()),
-    generateRustFile("vulkanalia-sys", "enums.rs", registry.generateEnums()),
-    generateRustFile("vulkanalia-sys", "extensions.rs", registry.generateExtensions()),
-    generateRustFile("vulkanalia-sys", "functions.rs", registry.generateFunctions()),
-    generateRustFile("vulkanalia-sys", "handles.rs", registry.generateHandles()),
-    generateRustFile("vulkanalia-sys", "macros.rs", registry.generateMacros()),
-    generateRustFile("vulkanalia-sys", "structs.rs", registry.generateStructs()),
-    generateRustFile("vulkanalia-sys", "typedefs.rs", registry.generateTypedefs()),
-    generateRustFile("vulkanalia-sys", "unions.rs", registry.generateUnions()),
-    generateRustFile("vulkanalia-sys", "video.rs", generateHeaders("video", video, videoOptions)),
-    generateRustFile("vulkanalia", "vk/builders.rs", registry.generateBuilders()),
-    generateRustFile("vulkanalia", "vk/chains.rs", registry.generateChains()),
-    generateRustFile("vulkanalia", "vk/commands.rs", registry.generateCommandStructs()),
-    generateRustFile("vulkanalia", "vk/enums.rs", registry.generateResultEnums()),
-    generateRustFile("vulkanalia", "vk/extensions.rs", registry.generateExtensionTraits()),
-    generateRustFile("vulkanalia", "vk/versions.rs", registry.generateVersionTraits()),
+    generateRustFile("generated-crate", "vk/bitmasks.rs", registry.generateBitmasks()),
+    generateRustFile("generated-crate", "vk/commands.rs", registry.generateCommands()),
+    generateRustFile("generated-crate", "vk/constants.rs", registry.generateConstants()),
+    generateRustFile("generated-crate", "vk/enums.rs", registry.generateEnums()),
+    generateRustFile("generated-crate", "vk/extensions.rs", registry.generateExtensions()),
+    generateRustFile("generated-crate", "vk/functions.rs", registry.generateFunctions()),
+    generateRustFile("generated-crate", "vk/handles.rs", registry.generateHandles()),
+    generateRustFile("generated-crate", "vk/macros.rs", registry.generateMacros()),
+    generateRustFile("generated-crate", "vk/result_enums.rs", registry.generateResultEnums()),
+    generateRustFile("generated-crate", "vk/structs.rs", registry.generateStructs()),
+    generateRustFile("generated-crate", "vk/typedefs.rs", registry.generateTypedefs()),
+    generateRustFile("generated-crate", "vk/unions.rs", registry.generateUnions()),
+    generateRustFile("generated-crate", "vk.rs", registry.generateVkModule()),
+    generateRustFile("generated-crate", "wrapper/builders.rs", registry.generateBuilders()),
+    generateRustFile("generated-crate", "wrapper/command_structs.rs", registry.generateCommandStructs()),
+    generateRustFile("generated-crate", "wrapper/extension_traits.rs", registry.generateExtensionTraits()),
+    generateRustFile("generated-crate", "wrapper/version_traits.rs", registry.generateVersionTraits()),
+    generateRustFile("generated-crate", "wrapper.rs", registry.generateWrapperModule()),
+    generateRustFile("generated-crate", "bitfields.rs", registry.generateBitfields()),
+    generateRustFile("generated-crate", "lib.rs", registry.generateLib()),
 )
 
 /** A generated Rust file. */
@@ -79,24 +72,6 @@ data class File(
             e.printStackTrace(System.err)
             false
         }
-    }
-
-    /** Checks whether this generated Rust file matches the file on disk. */
-    fun matches(directory: Path): Boolean {
-        val full = directory.resolve(path)
-
-        matches =
-            if (Files.exists(full)) {
-                val contents = Files.readString(full)
-                val matches = contents == this.contents
-                if (!matches) log.info { "$path does not match file on disk." }
-                matches
-            } else {
-                log.info { "$path does not exist on disk." }
-                false
-            }
-
-        return matches!!
     }
 
     /** Writes this generated Rust file to disk. */
